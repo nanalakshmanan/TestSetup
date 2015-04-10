@@ -1,0 +1,1 @@
+xcopy c:\Content\Content\Modules "C:\Program Files\WindowsPowerShell\Modules" /E /C /I /H /Y
