@@ -11,15 +11,17 @@
                                          # every Hyper-V host node for which
                                          # this configuration will be compiled
 
+            # One switch can be created overall
+            SwitchName        = 'DemoInternalSwitch'
+            SwitchType        = 'Internal'
+            SwitchIPv4Address = '192.168.1.100'
+
             # VMType is an array of hashtables
             # each entry contains data for VMs created from a single
             # vhd source
 
             VMType = @(
               @{
-                # the switch for all VMs
-                SwitchName      = 'DemoInternalSwitch'
-
                 # path where diff vhds will be created
                 VhdPath         = "$WorkingFolder\Vhd"
 
@@ -27,15 +29,15 @@
                 VMPath          = "$WorkingFolder\VM"
 
                 # location for the source vhd
-                VhdSource       = 'D:\VHD\Golden\w2k12r2-amd64-serverdatacenter-en_us.vhd'
+                VhdSource       = 'D:\VHD\Golden\Nana-Test.vhd'
 
                 # VMName is an array and will be combined with namebase to 
                 # create VM names like Nana-Test-DC, Nana-Test-WS, etc
 
                 VMNameBase        = 'Nana-Test'
-                VMName            = @('1', '2')
-                VMIPAddress       = @('192.168.1.1', '192.168.1.2')
-                VMStartupMemory   = 8GB
+                VMName            = @('1')
+                VMIPAddress       = @('192.168.1.1')
+                VMStartupMemory   = 16GB
                 VMState           = 'Running'
                 VMUnattendPath    = "$ScriptPath\unattend.xml"
                 VMUnattendCommand = "$ScriptPath\unattend.cmd"
@@ -46,7 +48,7 @@
                 #The folders to inject into this vhd. These will be
                 #available under \content
                 VMFoldersToCopy = @(
-                                        $ModulesFolder
+                                        $ContentFolder
                                     )
 
               }
@@ -56,10 +58,19 @@
 #>
 configuration TestMachine
 {
-    Import-DscResource -Module xHyper-V, xNetworking, nHyperV
+    Import-DscResource -Module xHyper-V, xNetworking, nHyperV, cHostsFile
 
     Node $AllNodes.Where{$_.Role -eq 'HyperVHost'}.NodeName
     {
+
+        # One virtual switch overall - ensure switch
+        xVMSwitch VirtualSwitch
+        {
+            Ensure    = 'Present'
+            Name      = $Node.SwitchName
+            Type      = $Node.SwitchType
+        }
+
         foreach($VMType in $Node.VMType)
         {            
             # working folder where VM will be created
@@ -163,6 +174,14 @@ configuration TestMachine
                     ComputerName             = $VMName 
                     DependsOn                = "[xVHD]VHD_$VMName"
                 }
+
+                # Create entry for VM in hosts file
+                cHostsFileEntry "Entry_$VMName"
+                {
+                    Ensure    = 'Present'
+                    ipAddress = $VMType.VMIPAddress[$i]
+                    hostName  = $VMName
+                }
                 $i++
 
                 #Create VM
@@ -171,11 +190,11 @@ configuration TestMachine
                     Name          = $VMName
                     VhdPath       = "$($VMType.VhdPath)\Instance\$VMName.vhd"
                     Path          = "$($VMType.VMPath)"
-                    SwitchName    = $VMType.SwitchName
+                    SwitchName    = $Node.SwitchName
                     StartupMemory = $VMType.VMStartupMemory
                     State         = $VMType.VMState
                     Ensure        = 'Present'
-                    DependsOn     = "[nUnattend]VHD_$VMName.Inject"
+                    DependsOn     = "[nUnattend]VHD_$VMName.Inject", '[xVMSwitch]VirtualSwitch', "[cHostsFileEntry]Entry_$VMName"
                 }
              }
 
@@ -194,6 +213,15 @@ configuration TestMachine
                 VMName     =   $AllNames
                 PseudoKey  =   'WaitForIP'
                 Dependson  =   $DependsOnArray
+             }
+
+             # set the IP Address of the switch at the very end
+             # only then CIM session seems to work - not sure why
+             xIPAddress switchIPAddress
+             {
+                IPAddress      = $Node.SwitchIPv4Address
+                InterfaceAlias = '*vet*'
+                DependsOn      = '[xVMSwitch]VirtualSwitch', '[nWaitForVMIPAddress]WaitForIP'
              }
        }
     }
