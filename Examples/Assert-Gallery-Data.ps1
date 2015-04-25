@@ -1,6 +1,7 @@
 ﻿$ScriptPath = Split-Path $MyInvocation.MyCommand.Path
 $WorkingFolder = 'D:\Nana\Test'
 $ContentFolder = 'D:\Content\'
+$Credential = Get-Credential administrator
 
 @{
     AllNodes = @(
@@ -26,12 +27,43 @@ $ContentFolder = 'D:\Content\'
             # vhd source
 
             VMType = @(
+
               @{
-                # name of the VMType
+
+                # Name for this VMType
+                Name            = 'GalleryVM'
+
+                # location for the source vhd
+                VhdSource       = 'D:\VHD\Golden\Base.vhd'
+
+                # VMName is an array and will be combined with namebase to 
+                # create VM names like Nana-Test-DC, Nana-Test-WS, etc
+
+                VMNameBase        = 'Nana'
+                VMName            = @('Gallery')
+                VMIPAddress       = @('192.168.1.100')
+                VMStartupMemory   = 8GB
+                VMState           = 'Running'
+                VMUnattendPath    = "$ScriptPath\unattend.xml"
+                VMUnattendCommand = "$ScriptPath\unattend.cmd"
+
+                # Administrator credentials
+                VMAdministratorCredentials = $Credential
+
+                #The folders to inject into this vhd. These will be
+                #available under \content
+                VMFoldersToCopy = @(              
+                                      $ContentFolder                          
+                                    )
+
+              }
+              @{
+
+                # Name for this VMType
                 Name            = 'TestVM'
 
                 # location for the source vhd
-                VhdSource       = 'D:\VHD\Golden\Nana-Test.vhd'
+                VhdSource       = 'D:\VHD\Golden\Base.vhd'
 
                 # VMName is an array and will be combined with namebase to 
                 # create VM names like Nana-Test-DC, Nana-Test-WS, etc
@@ -39,13 +71,13 @@ $ContentFolder = 'D:\Content\'
                 VMNameBase        = 'Nana-Test'
                 VMName            = @('1')
                 VMIPAddress       = @('192.168.1.1')
-                VMStartupMemory   = 16GB
+                VMStartupMemory   = 4GB
                 VMState           = 'Running'
                 VMUnattendPath    = "$ScriptPath\unattend.xml"
                 VMUnattendCommand = "$ScriptPath\unattend.cmd"
 
                 # Administrator credentials
-                VMAdministratorCredentials = (Get-Credential)
+                VMAdministratorCredentials = $Credential
 
                 #The folders to inject into this vhd. These will be
                 #available under \content
