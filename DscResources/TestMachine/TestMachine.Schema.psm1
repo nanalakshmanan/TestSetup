@@ -6,7 +6,28 @@
 
     AllNodes = @(
         @{
+            NodeName = 'localhost';
+            Role     = 'HyperVHost'      # HyperVHost as the role identifies
+                                         # every Hyper-V host node for which
+                                         # this configuration will be compiled
 
+            # One switch can be created overall
+            SwitchName        = 'DemoSwitchInternal'
+            SwitchType        = 'Internal'
+            SwitchIPv4Address = '192.168.1.10'
+
+            # path where diff vhds will be created
+            VhdPath         = "$WorkingFolder\Vhd"
+
+            # path where VM data will be stored
+            VMPath          = "$WorkingFolder\VM"
+
+            # VMType is an array of hashtables
+            # each entry contains data for VMs created from a single
+            # vhd source
+
+            VMType = @(
+              @{
                 # Name for this VMType
                 Name            = 'TestVM'
 
@@ -38,6 +59,7 @@
                 VMFoldersToCopy = @(
                                         $ContentFolder
                                     )
+              }
 
         }
     )
