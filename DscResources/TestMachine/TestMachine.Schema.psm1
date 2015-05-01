@@ -66,7 +66,7 @@
 #>
 configuration TestMachine
 {
-    Import-DscResource -Module xHyper-V, xNetworking, nHyperV, cHostsFile
+    Import-DscResource -Module xHyper-V, xNetworking, nHyper-V, cHostsFile
 
     Node $AllNodes.Where{$_.Role -eq 'HyperVHost'}.NodeName
     {
