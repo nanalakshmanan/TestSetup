@@ -65,8 +65,8 @@
     )
 #>
 configuration TestMachine
-{
-    Import-DscResource -Module xHyper-V, xNetworking, nHyper-V, cHostsFile
+{    
+    Import-DscResource -Module xHyper-V, xNetworking, nHyper-V, cHostsFile,  PSDesiredStateConfiguration
 
     Node $AllNodes.Where{$_.Role -eq 'HyperVHost'}.NodeName
     {
@@ -100,12 +100,11 @@ configuration TestMachine
             Ensure          = 'Present'
             Type            = 'Directory'
         }
-
+        
         foreach($VMType in $Node.VMType)
         {         
             $VMTypeName = $VMType.Name
-               
-            File "$VMTypeName.SourceVhd"
+            File "$($VMTypeName)_SourceVhd"
             {
                 SourcePath      = "$($VMType.VhdSource)"
                 DestinationPath = "$($Node.VhdPath)\Base\$($VMType.VMNameBase).vhd"
@@ -123,7 +122,7 @@ configuration TestMachine
                   Path       = "$($Node.VhdPath)\Base"
                   ParentPath = $SourceVhdPath
                   Ensure     = 'Present'
-                  DependsOn  = "[File]$VMTypeName.SourceVhd"
+                  DependsOn  = "[File]$($VMTypeName)_SourceVhd"
             }
 
             #Copy required modules and any additional content specified
@@ -148,7 +147,7 @@ configuration TestMachine
             $BaseVhdPath  = "$($Node.VhdPath)\Base\$BaseVMName.base.vhd"
             
             #Inject required files into the Base VHD
-            xVhdFile "$BaseVMName.Inject"
+            xVhdFile "$($BaseVMName)_Inject"
             {
                   VhdPath       = $BaseVhdPath
                   FileDirectory = $FileDirectoryToCopy
@@ -168,13 +167,13 @@ configuration TestMachine
                     Path       = "$($Node.VhdPath)\Instance\"
                     ParentPath = $BaseVhdPath
                     Ensure     = 'Present'
-                    DependsOn  = "[xVhdFile]$BaseVMName.Inject"
+                    DependsOn  = "[xVhdFile]$($BaseVMName)_Inject"
                 }              
 
                 $InstanceVhdPath = "$($Node.VhdPath)\Instance\$VMName.vhd"
              
                 # create the required unattend.xml in the Vhd
-                nUnattend "Vhd_$VMName.Inject"
+                nUnattend "Vhd_$VMName_Inject"
                 {
                     VhdPath                  = $InstanceVhdPath
                     AdministratorCredentials = $VMType.VMAdministratorCredentials
@@ -203,7 +202,7 @@ configuration TestMachine
                     StartupMemory = $VMType.VMStartupMemory
                     State         = $VMType.VMState
                     Ensure        = 'Present'
-                    DependsOn     = "[nUnattend]VHD_$VMName.Inject", '[xVMSwitch]VirtualSwitch', "[cHostsFileEntry]Entry_$VMName"
+                    DependsOn     = "[nUnattend]VHD_$VMName_Inject", '[xVMSwitch]VirtualSwitch', "[cHostsFileEntry]Entry_$VMName"
                 }
              }
 
@@ -217,10 +216,10 @@ configuration TestMachine
              }
 
              # wait for all the VMs to come up
-             nWaitForVMIPAddress "$VMTypeName.WaitForIP"
+             nWaitForVMIPAddress "$($VMTypeName)_WaitForIP"
              {
                 VMName     =   $AllNames
-                PseudoKey  =   "$VMTypeName.WaitForIP"
+                PseudoKey  =   "$($VMTypeName)_WaitForIP"
                 Dependson  =   $DependsOnArray
              }             
        }
@@ -228,7 +227,7 @@ configuration TestMachine
         $DependsOnArray = @()
         foreach($VMType in $Node.VMType)
         {
-            $DependsOnArray += "[nWaitForVMIPAddress]$($VMType.Name).WaitForIP"
+            $DependsOnArray += "[nWaitForVMIPAddress]$($VMType.Name)_WaitForIP"
         }
         $DependsOnArray += '[xVMSwitch]VirtualSwitch'
 
