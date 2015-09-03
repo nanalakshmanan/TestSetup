@@ -54,6 +54,10 @@
                 # Administrator credentials
                 VMAdministratorCredentials = $Credential
 
+                # This is the modules folder. Everything under this folder
+                # will be copied to $Env:ProgramFiles\WindowsPowerShell\Modules
+                VMModulesFolder = "$ContentFolder\Modules"
+
                 #The folders to inject into this vhd. These will be
                 #available under \content
                 VMFoldersToCopy = @(
@@ -127,6 +131,15 @@ configuration TestMachine
 
             #Copy required modules and any additional content specified
             $FileDirectoryToCopy = @()
+
+            $FileDirectoryToCopy += @(
+                        MSFT_xFileDirectory {
+                                                  SourcePath = $VMType.VMModulesFolder
+                                                  DestinationPath = 'Program Files\WindowsPowerShell'
+                                                  Ensure = 'Present'
+                                                  Recurse = $true                                                 
+                                              }
+            )
 
             foreach($SourceFolder in $VMType.VMFoldersToCopy) 
             {
