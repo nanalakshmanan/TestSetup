@@ -42,13 +42,17 @@ $Credential = Get-Credential administrator
                 VMNameBase        = 'Nana'
                 VMName            = @('Gallery')
                 VMIPAddress       = @('192.168.1.100')
-                VMStartupMemory   = 8GB
+                VMStartupMemory   = 4GB
                 VMState           = 'Running'
                 VMUnattendPath    = "$ScriptPath\unattend.xml"
                 VMUnattendCommand = "$ScriptPath\unattend.cmd"
 
                 # Administrator credentials
                 VMAdministratorCredentials = $Credential
+
+                # This is the modules folder. Everything under this folder
+                # will be copied to $Env:ProgramFiles\WindowsPowerShell\Modules
+                VMModulesFolder = (Join-Path $ContentFolder 'Modules')
 
                 #The folders to inject into this vhd. These will be
                 #available under \content
@@ -71,7 +75,7 @@ $Credential = Get-Credential administrator
                 VMNameBase        = 'Nana-Test'
                 VMName            = @('1')
                 VMIPAddress       = @('192.168.1.1')
-                VMStartupMemory   = 4GB
+                VMStartupMemory   = 8GB
                 VMState           = 'Running'
                 VMUnattendPath    = "$ScriptPath\unattend.xml"
                 VMUnattendCommand = "$ScriptPath\unattend.cmd"
